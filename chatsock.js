@@ -20,7 +20,6 @@ function broadcast(speaker, message) {
     }
 }
 
-// Create a new server instance
 const server = net.createServer((socket) => {
   console.log('Client connected');
 
@@ -30,7 +29,6 @@ const server = net.createServer((socket) => {
 
   socket.write('Commands: ? - show directory of users\n')
 
-  // Handle data from the client
   socket.on('data', (data) => {
     str = data.toString().trim()
     switch(str[0]) {
@@ -60,7 +58,6 @@ const server = net.createServer((socket) => {
     console.log(`Received: ${data}`);
   });
 
-  // Handle client disconnection
   socket.on('end', () => {
     console.log('Client disconnected');
     if(name != '') {
@@ -68,13 +65,11 @@ const server = net.createServer((socket) => {
     }
   });
 
-  // Handle error events
   socket.on('error', (err) => {
     console.log(`Error: ${err.message}`);
   });
 });
 
-// Listen on a specific port
 const port = 3000;
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);
