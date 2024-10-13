@@ -1,21 +1,21 @@
 const net = require('net');
 
-const connections = [];
+const connections = {};
 
 function show_directory(socket) {
-    socket.write('Directory of connections:\n')
-    for (var sock of connections) {
-        socket.write(`Connection at remote address: ${sock.remoteAddress}:${sock.remotePort}\n`);
+    socket.write('Directory of connections:\n');
+    for (let name in connections) {
+        if (connections.hasOwnProperty(name)) {
+            socket.write(`${name} is connected at ${connections[name].remoteAddress}:${connections[name].remotePort}\n`);
+        }
     }
     socket.write('\n');
 }
 
-function broadcast(speaker,data) {
-    for (var sock of connections) {
-        console.log(`Testing ${sock.remotePort} vs ${speaker.remotePort}\n`)
-        if(sock.remotePort != speaker.remotePort) {
-            console.log('yes')
-            sock.write(`Port ${speaker.remotePort} says: ${data.toString().trim()}\n`);
+function broadcast(speaker, message) {
+    for (let name in connections) {
+        if (connections.hasOwnProperty(name) && name !== speaker) {
+            connections[name].write(`${speaker}: ${message}\n`);
         }
     }
 }
@@ -24,22 +24,38 @@ function broadcast(speaker,data) {
 const server = net.createServer((socket) => {
   console.log('Client connected');
 
-  connections.push(socket);
-  console.log('Client connected. Total connections:', connections.length);
+  socket.write('Type your name and hit enter to start chatting.\n')
 
-  // Send a welcome message to the client
-  socket.write(`You are connection ${connections.length} at ${socket.remoteAddress}:${socket.remotePort} \n`);
+  var name = '';
+
+  socket.write('Commands: ? - show directory of users\n')
 
   // Handle data from the client
   socket.on('data', (data) => {
-    command_prefix = data.toString().trim()[0];
-    console.log('Command:' + command_prefix)
-    switch(command_prefix) {
+    str = data.toString().trim()
+    switch(str[0]) {
         case '?':
             show_directory(socket);
             break;
         default:
-            broadcast(socket,data);
+            if(name == '') {
+                if(str.length == 0) {
+                    socket.write(`Bad name: ${str}, type another name.`)
+                    break;
+                }
+                if(connections[str] != null) {
+                    socket.write(`Name ${str} is use, type another name.`)
+                    break;
+                }
+                name = str;
+                connections[name] = socket;
+
+                socket.write(`You are connected as ${name}\nTotal in chatroom: ${Object.keys(connections).length}\n`);
+
+            } else {
+                broadcast(name,str);
+            }
+            break;
     }
     console.log(`Received: ${data}`);
   });
@@ -47,6 +63,9 @@ const server = net.createServer((socket) => {
   // Handle client disconnection
   socket.on('end', () => {
     console.log('Client disconnected');
+    if(name != '') {
+        delete connections[name]
+    }
   });
 
   // Handle error events
