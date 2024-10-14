@@ -1,5 +1,5 @@
-// TEST WITH:
 /*
+TEST WITH:
 curl -X POST \
   -d "{ \"artist\": \"Elvis Costello\" }" \
   http://localhost:3000/artist
